@@ -1,0 +1,27 @@
+# LLM 响应时间测试配置文件
+# 将此文件放在项目目录下，或通过 --config 参数指定路径
+
+# API 配置
+endpoint: "https://api.openai.com/v1/chat/completions"
+api_key: "sk-your-api-key-here"  # 也可通过 LLM_API_KEY 环境变量设置
+model: "gpt-4"
+
+# 测试配置
+streaming: false      # 是否使用 streaming 模式（可测量 TTFT）
+runs: 1               # 每个提示词的测试次数
+timeout: 120          # 请求超时时间（秒）
+
+# 模型参数
+# reasoning_effort: "medium"  # 推理强度：low, medium, high（适用于 o1 等推理模型）
+# max_tokens: 4096            # 最大输出 token 数
+
+# 提示词配置（二选一）
+# 方式1：直接指定单个提示词
+prompt: "Hello, how are you?"
+
+# 方式2：从文件读取（每行一个提示词）
+# prompt_file: "prompts.txt"
+
+# 输出配置
+# output: "results.json"  # 保存结果到文件
+# json_output: false      # 是否仅输出 JSON 格式
