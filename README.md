@@ -244,6 +244,98 @@ python main.py \
 | **输出 Tokens** | 模型生成的 token 数量 |
 | **TPS** | Tokens Per Second，每秒生成的 token 数 |
 
+### 📐 统计口径详解
+
+#### 1. 总延迟 (Total Latency)
+
+```text
+总延迟 = 请求结束时间 - 请求开始时间
+```
+
+- **测量起点**：HTTP 请求发送的瞬间（`httpx` 客户端发起请求）
+- **测量终点**：
+  - **Non-streaming 模式**：收到完整 HTTP 响应体
+  - **Streaming 模式**：收到最后一个 SSE chunk（`data: [DONE]`）
+- **单位**：毫秒 (ms)
+- **包含内容**：网络延迟 + 服务端处理时间 + Token 生成时间
+
+#### 2. 首 Token 延迟 (TTFT - Time To First Token)
+
+```text
+TTFT = 首个有效内容 chunk 接收时间 - 请求开始时间
+```
+
+- **仅在 Streaming 模式下可用**
+- **测量起点**：HTTP 请求发送的瞬间
+- **测量终点**：收到第一个包含非空 `content` 的 SSE chunk
+- **单位**：毫秒 (ms)
+- **意义**：反映模型"思考"时间，对于推理模型（如 o1、GPT-5.2-Codex）此值较大
+- **注意**：不计入空 chunk 或仅包含 `role` 字段的初始 chunk
+
+#### 3. 输出 Token 数 (Output Tokens / Completion Tokens)
+
+```text
+输出 Tokens = API 返回的 usage.completion_tokens || tiktoken 本地计算
+```
+
+- **优先使用 API 返回值**：大多数 OpenAI 兼容 API 会在响应中返回 `usage.completion_tokens`
+- **降级计算**：若 API 未返回 token 统计，使用 `tiktoken` 库本地计算：
+  - 优先使用模型对应的编码器
+  - 默认使用 `cl100k_base` 编码（GPT-4/3.5 标准）
+- **单位**：个
+- **注意**：本地计算可能与服务端略有差异（通常 ±5%）
+
+#### 4. Token 生成速度 (TPS - Tokens Per Second)
+
+```text
+# Streaming 模式（推荐，更精确）
+TPS = 输出 Tokens / ((总延迟 - TTFT) / 1000)
+
+# Non-streaming 模式
+TPS = 输出 Tokens / (总延迟 / 1000)
+```
+
+- **Streaming 模式**：使用**生成阶段时间**（总延迟 - TTFT）作为分母
+  - 排除了首 Token 前的"思考"时间
+  - 更准确反映模型的实际生成速度
+- **Non-streaming 模式**：使用总延迟作为分母
+  - 包含了完整的请求处理时间
+- **单位**：tokens/s
+- **边界处理**：若有效延迟 ≤ 0，返回 0.0
+
+#### 5. 聚合统计指标
+
+对于批量测试，会对上述指标进行聚合统计：
+
+| 统计量 | 计算方式 | 说明 |
+| -------- | ---------- | ------ |
+| **平均值 (avg)** | `sum(values) / count` | 所有成功请求的算术平均 |
+| **标准差 (std)** | `stdev(values)` | 衡量数据离散程度，样本数 > 1 时计算 |
+| **最小值 (min)** | `min(values)` | 最快/最少的一次 |
+| **最大值 (max)** | `max(values)` | 最慢/最多的一次 |
+| **样本数 (count)** | `len(successful_results)` | 成功请求的数量 |
+
+**注意**：
+
+- 失败的请求不参与统计计算
+- 标准差在仅有 1 个样本时为 0
+- 所有数值保留 2 位小数
+
+#### 6. 效率指标（报告中使用）
+
+| 指标 | 公式 | 说明 |
+| ------ | ------ | ------ |
+| **每 Token 平均延迟** | `总延迟 / 输出 Tokens` | 生成每个 token 的平均耗时 |
+| **有效生成时间** | `总延迟 - TTFT` | 排除思考时间的纯生成耗时 |
+| **输出效率** | `输出 Tokens / (总延迟 / 1000)` | 每秒有效输出 token 数（不排除 TTFT） |
+| **思考时间** | `≈ TTFT` | 模型推理/规划阶段的耗时 |
+
+#### 7. 时间戳精度
+
+- 使用 Python `time.perf_counter()` 获取高精度时间戳
+- 精度：微秒级（取决于操作系统）
+- 输出精度：保留 2 位小数（0.01 ms）
+
 ### JSON 输出格式
 
 ```json
