@@ -34,7 +34,8 @@ class LLMClient:
         model: str,
         timeout: float = 120.0,
         reasoning_effort: Optional[str] = None,
-        max_tokens: Optional[int] = None
+        max_tokens: Optional[int] = None,
+        no_cache: bool = False
     ):
         """
         初始化客户端
@@ -46,6 +47,7 @@ class LLMClient:
             timeout: 请求超时时间（秒）
             reasoning_effort: 推理强度（low/medium/high），适用于 o1 等推理模型
             max_tokens: 最大输出 token 数
+            no_cache: 是否禁用 API 端缓存（默认 False）
         """
         self.endpoint = endpoint.rstrip('/')
         self.api_key = api_key
@@ -53,14 +55,35 @@ class LLMClient:
         self.timeout = timeout
         self.reasoning_effort = reasoning_effort
         self.max_tokens = max_tokens
+        self.no_cache = no_cache
         
         self.headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}"
+            "Authorization": f"Bearer {api_key}",
+            "api-key": api_key  # Azure OpenAI 使用 api-key header
         }
+        
+        # 检测是否为 Responses API（Azure 新格式）
+        self.is_responses_api = "/responses" in endpoint
     
     def _build_request_body(self, prompt: str, stream: bool = False) -> dict:
         """构建请求体"""
+        # Responses API 格式（Azure 新 API）
+        if self.is_responses_api:
+            body = {
+                "model": self.model,
+                "input": prompt,
+                "stream": stream
+            }
+            if self.reasoning_effort:
+                body["reasoning"] = {"effort": self.reasoning_effort}
+            if self.max_tokens:
+                body["max_output_tokens"] = self.max_tokens
+            if self.no_cache:
+                body["store"] = False  # 禁用 API 端缓存
+            return body
+        
+        # Chat Completions API 格式（OpenAI 标准）
         body = {
             "model": self.model,
             "messages": [
@@ -80,6 +103,16 @@ class LLMClient:
     def _extract_tokens_from_response(self, response_data: dict) -> TokenMetrics:
         """从响应中提取 token 使用信息"""
         usage = response_data.get("usage", {})
+        
+        # Responses API 格式
+        if self.is_responses_api:
+            return TokenMetrics(
+                prompt_tokens=usage.get("input_tokens", 0),
+                completion_tokens=usage.get("output_tokens", 0),
+                total_tokens=usage.get("total_tokens", 0)
+            )
+        
+        # Chat Completions API 格式
         return TokenMetrics(
             prompt_tokens=usage.get("prompt_tokens", 0),
             completion_tokens=usage.get("completion_tokens", 0),
@@ -88,6 +121,18 @@ class LLMClient:
     
     def _extract_content_from_response(self, response_data: dict) -> str:
         """从响应中提取生成的内容"""
+        # Responses API 格式
+        if self.is_responses_api:
+            output = response_data.get("output", [])
+            content_parts = []
+            for item in output:
+                if item.get("type") == "message":
+                    for content in item.get("content", []):
+                        if content.get("type") == "output_text":
+                            content_parts.append(content.get("text", ""))
+            return "".join(content_parts)
+        
+        # Chat Completions API 格式
         choices = response_data.get("choices", [])
         if choices:
             message = choices[0].get("message", {})
@@ -259,18 +304,33 @@ class LLMClient:
                                 if ttft is None:
                                     ttft = (time.perf_counter() - start_time) * 1000
                                 
-                                # 提取内容
-                                choices = chunk_data.get("choices", [])
-                                if choices:
-                                    delta = choices[0].get("delta", {})
-                                    chunk_content = delta.get("content", "")
-                                    if chunk_content:
-                                        content_chunks.append(chunk_content)
-                                
-                                # 检查是否有 usage 信息（部分 API 在最后一个 chunk 返回）
-                                usage = chunk_data.get("usage")
-                                if usage:
-                                    completion_tokens = usage.get("completion_tokens", 0)
+                                # Responses API 格式
+                                if self.is_responses_api:
+                                    # 处理 response.output_text.delta 事件
+                                    chunk_type = chunk_data.get("type", "")
+                                    if chunk_type == "response.output_text.delta":
+                                        delta_text = chunk_data.get("delta", "")
+                                        if delta_text:
+                                            content_chunks.append(delta_text)
+                                    # 处理完成事件中的 usage
+                                    elif chunk_type == "response.completed":
+                                        resp = chunk_data.get("response", {})
+                                        usage = resp.get("usage", {})
+                                        if usage:
+                                            completion_tokens = usage.get("output_tokens", 0)
+                                else:
+                                    # Chat Completions API 格式
+                                    choices = chunk_data.get("choices", [])
+                                    if choices:
+                                        delta = choices[0].get("delta", {})
+                                        chunk_content = delta.get("content", "")
+                                        if chunk_content:
+                                            content_chunks.append(chunk_content)
+                                    
+                                    # 检查是否有 usage 信息（部分 API 在最后一个 chunk 返回）
+                                    usage = chunk_data.get("usage")
+                                    if usage:
+                                        completion_tokens = usage.get("completion_tokens", 0)
                                     
                             except json.JSONDecodeError:
                                 continue

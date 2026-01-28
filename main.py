@@ -370,6 +370,12 @@ def results_to_dict(results: list[TestResult], summary: BatchSummary) -> dict:
     type=int,
     help="最大输出 token 数"
 )
+@click.option(
+    "--no-cache",
+    is_flag=True,
+    default=None,
+    help="禁用 API 端缓存，确保每次请求都重新计算"
+)
 def main(
     config: Optional[str],
     endpoint: Optional[str],
@@ -383,7 +389,8 @@ def main(
     output: Optional[str],
     json_output: Optional[bool],
     reasoning_effort: Optional[str],
-    max_tokens: Optional[int]
+    max_tokens: Optional[int],
+    no_cache: Optional[bool]
 ):
     """
     LLM 响应时间测试工具
@@ -408,6 +415,7 @@ def main(
         "json_output": json_output,
         "reasoning_effort": reasoning_effort,
         "max_tokens": max_tokens,
+        "no_cache": no_cache,
     }
     cfg = merge_config_with_cli(file_config, cli_values)
     
@@ -424,6 +432,7 @@ def main(
     json_output = cfg.get("json_output", False)
     reasoning_effort = cfg.get("reasoning_effort")
     max_tokens = cfg.get("max_tokens")
+    no_cache = cfg.get("no_cache", False)
     config_file_used = cfg.get("_config_file")
     
     # 验证必需参数
@@ -475,7 +484,8 @@ def main(
         model=model,
         timeout=timeout,
         reasoning_effort=reasoning_effort,
-        max_tokens=max_tokens
+        max_tokens=max_tokens,
+        no_cache=no_cache
     )
     
     # 执行测试
