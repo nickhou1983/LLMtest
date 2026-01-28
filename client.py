@@ -300,10 +300,6 @@ class LLMClient:
                             try:
                                 chunk_data = json.loads(data_str)
                                 
-                                # 记录首 token 时间
-                                if ttft is None:
-                                    ttft = (time.perf_counter() - start_time) * 1000
-                                
                                 # Responses API 格式
                                 if self.is_responses_api:
                                     # 处理 response.output_text.delta 事件
@@ -311,6 +307,8 @@ class LLMClient:
                                     if chunk_type == "response.output_text.delta":
                                         delta_text = chunk_data.get("delta", "")
                                         if delta_text:
+                                            if ttft is None:
+                                                ttft = (time.perf_counter() - start_time) * 1000
                                             content_chunks.append(delta_text)
                                     # 处理完成事件中的 usage
                                     elif chunk_type == "response.completed":
@@ -325,6 +323,8 @@ class LLMClient:
                                         delta = choices[0].get("delta", {})
                                         chunk_content = delta.get("content", "")
                                         if chunk_content:
+                                            if ttft is None:
+                                                ttft = (time.perf_counter() - start_time) * 1000
                                             content_chunks.append(chunk_content)
                                     
                                     # 检查是否有 usage 信息（部分 API 在最后一个 chunk 返回）

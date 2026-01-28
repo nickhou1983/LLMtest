@@ -139,7 +139,8 @@ def run_single_test(
         if response.tokens and response.timing:
             tps = calculate_tps(
                 response.tokens.completion_tokens,
-                response.timing.total_latency_ms
+                response.timing.total_latency_ms,
+                response.timing.ttft_ms
             )
         
         return TestResult(

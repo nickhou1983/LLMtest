@@ -83,20 +83,26 @@ def count_tokens_tiktoken(text: str, model: str = "gpt-4") -> int:
         return len(text) // 3
 
 
-def calculate_tps(tokens: int, latency_ms: float) -> float:
+def calculate_tps(tokens: int, total_latency_ms: float, ttft_ms: Optional[float] = None) -> float:
     """
     计算每秒生成的 token 数量
     
     Args:
         tokens: 生成的 token 数量
-        latency_ms: 延迟时间（毫秒）
+        total_latency_ms: 总延迟时间（毫秒）
+        ttft_ms: 首 token 时间（毫秒），用于估算纯生成阶段吞吐
         
     Returns:
         每秒 token 数
     """
-    if latency_ms <= 0:
+    if total_latency_ms <= 0:
         return 0.0
-    return tokens / (latency_ms / 1000.0)
+    effective_latency_ms = total_latency_ms
+    if ttft_ms is not None and 0 < ttft_ms < total_latency_ms:
+        effective_latency_ms = total_latency_ms - ttft_ms
+    if effective_latency_ms <= 0:
+        return 0.0
+    return tokens / (effective_latency_ms / 1000.0)
 
 
 def aggregate_values(values: list[float]) -> AggregatedStats:
