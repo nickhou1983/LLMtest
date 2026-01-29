@@ -2,7 +2,7 @@
 # 将此文件放在项目目录下，或通过 --config 参数指定路径
 
 # API 配置
-endpoint: ""
+endpoint: "https://codex-cli-azure-resource.cognitiveservices.azure.com/openai/responses?api-version=2025-04-01-preview"
 api_key: ""  # 也可通过 LLM_API_KEY 环境变量设置
 model: "gpt-5.2-codex"
 

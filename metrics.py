@@ -14,6 +14,7 @@ class TimingMetrics:
     """时间指标"""
     total_latency_ms: float  # 总延迟（毫秒）
     ttft_ms: Optional[float] = None  # 首 token 时间（仅 streaming 模式）
+    ttfr_ms: Optional[float] = None  # 首 reasoning token 时间（仅 streaming 模式）
 
 
 @dataclass
@@ -54,6 +55,7 @@ class BatchSummary:
     failed: int = 0
     latency_stats: Optional[AggregatedStats] = None
     ttft_stats: Optional[AggregatedStats] = None
+    ttfr_stats: Optional[AggregatedStats] = None
     output_tokens_stats: Optional[AggregatedStats] = None
     tps_stats: Optional[AggregatedStats] = None
 
@@ -147,6 +149,7 @@ def summarize_results(results: list[TestResult]) -> BatchSummary:
     
     latencies = []
     ttfts = []
+    ttfrs = []
     output_tokens = []
     tps_values = []
     
@@ -155,6 +158,8 @@ def summarize_results(results: list[TestResult]) -> BatchSummary:
             latencies.append(r.timing.total_latency_ms)
             if r.timing.ttft_ms is not None:
                 ttfts.append(r.timing.ttft_ms)
+            if r.timing.ttfr_ms is not None:
+                ttfrs.append(r.timing.ttfr_ms)
         if r.tokens:
             output_tokens.append(r.tokens.completion_tokens)
         if r.tps is not None:
@@ -166,6 +171,7 @@ def summarize_results(results: list[TestResult]) -> BatchSummary:
         failed=len(results) - len(successful_results),
         latency_stats=aggregate_values(latencies) if latencies else None,
         ttft_stats=aggregate_values(ttfts) if ttfts else None,
+        ttfr_stats=aggregate_values(ttfrs) if ttfrs else None,
         output_tokens_stats=aggregate_values(output_tokens) if output_tokens else None,
         tps_stats=aggregate_values(tps_values) if tps_values else None
     )

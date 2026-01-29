@@ -207,6 +207,7 @@ def display_results_table(results: list[TestResult], streaming: bool):
     table.add_column("延迟(ms)", style="yellow", justify="right", width=12)
     if streaming:
         table.add_column("TTFT(ms)", style="magenta", justify="right", width=12)
+        table.add_column("TTFR(ms)", style="magenta", justify="right", width=12)
     table.add_column("输出Tokens", style="green", justify="right", width=12)
     table.add_column("TPS", style="blue", justify="right", width=10)
     
@@ -224,11 +225,13 @@ def display_results_table(results: list[TestResult], streaming: bool):
             row.append(f"{result.timing.total_latency_ms:.2f}" if result.timing else "-")
             if streaming:
                 row.append(f"{result.timing.ttft_ms:.2f}" if result.timing and result.timing.ttft_ms else "-")
+                row.append(f"{result.timing.ttfr_ms:.2f}" if result.timing and result.timing.ttfr_ms else "-")
             row.append(str(result.tokens.completion_tokens) if result.tokens else "-")
             row.append(f"{result.tps:.2f}" if result.tps else "-")
         else:
             row.append("-")
             if streaming:
+                row.append("-")
                 row.append("-")
             row.append("-")
             row.append("-")
@@ -258,6 +261,8 @@ def display_summary(summary: BatchSummary, streaming: bool):
     
     if streaming and summary.ttft_stats:
         summary_text += f"  TTFT: {format_stats(summary.ttft_stats, ' ms')}\n"
+    if streaming and summary.ttfr_stats:
+        summary_text += f"  TTFR: {format_stats(summary.ttfr_stats, ' ms')}\n"
     
     summary_text += f"""  输出Tokens: {format_stats(summary.output_tokens_stats)}
   TPS: {format_stats(summary.tps_stats, " tokens/s")}
@@ -286,6 +291,7 @@ def results_to_dict(results: list[TestResult], summary: BatchSummary) -> dict:
             "failed": summary.failed,
             "latency_stats": stats_to_dict(summary.latency_stats),
             "ttft_stats": stats_to_dict(summary.ttft_stats),
+            "ttfr_stats": stats_to_dict(summary.ttfr_stats),
             "output_tokens_stats": stats_to_dict(summary.output_tokens_stats),
             "tps_stats": stats_to_dict(summary.tps_stats)
         },
@@ -297,6 +303,7 @@ def results_to_dict(results: list[TestResult], summary: BatchSummary) -> dict:
                 "response_content": r.response_content,
                 "latency_ms": r.timing.total_latency_ms if r.timing else None,
                 "ttft_ms": r.timing.ttft_ms if r.timing else None,
+                "ttfr_ms": r.timing.ttfr_ms if r.timing else None,
                 "output_tokens": r.tokens.completion_tokens if r.tokens else None,
                 "tps": r.tps
             }
