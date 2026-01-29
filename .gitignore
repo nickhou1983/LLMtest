@@ -2,6 +2,9 @@
 config.yaml
 config.yml
 
+# Slides 生成的中间文件
+Slides/
+
 # 测试结果文件
 result_*.json
 
