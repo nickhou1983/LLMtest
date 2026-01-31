@@ -34,6 +34,7 @@ class LLMClient:
         model: str,
         timeout: float = 120.0,
         reasoning_effort: Optional[str] = None,
+        reasoning_summary: Optional[str] = None,
         max_tokens: Optional[int] = None,
         no_cache: bool = False
     ):
@@ -46,6 +47,7 @@ class LLMClient:
             model: 模型名称
             timeout: 请求超时时间（秒）
             reasoning_effort: 推理强度（low/medium/high），适用于 o1 等推理模型
+            reasoning_summary: 推理摘要模式（auto/detailed/concise），启用后可获取 TTFR
             max_tokens: 最大输出 token 数
             no_cache: 是否禁用 API 端缓存（默认 False）
         """
@@ -54,6 +56,7 @@ class LLMClient:
         self.model = model
         self.timeout = timeout
         self.reasoning_effort = reasoning_effort
+        self.reasoning_summary = reasoning_summary
         self.max_tokens = max_tokens
         self.no_cache = no_cache
         
@@ -75,8 +78,13 @@ class LLMClient:
                 "input": prompt,
                 "stream": stream
             }
-            if self.reasoning_effort:
-                body["reasoning"] = {"effort": self.reasoning_effort}
+            if self.reasoning_effort or self.reasoning_summary:
+                reasoning_config = {}
+                if self.reasoning_effort:
+                    reasoning_config["effort"] = self.reasoning_effort
+                if self.reasoning_summary:
+                    reasoning_config["summary"] = self.reasoning_summary
+                body["reasoning"] = reasoning_config
             if self.max_tokens:
                 body["max_output_tokens"] = self.max_tokens
             if self.no_cache:
@@ -315,6 +323,12 @@ class LLMClient:
                                     elif chunk_type in ("response.reasoning_text.delta", "response.reasoning.delta"):
                                         reasoning_delta = chunk_data.get("delta") or chunk_data.get("text") or ""
                                         if isinstance(reasoning_delta, str) and reasoning_delta:
+                                            if ttfr is None:
+                                                ttfr = (time.perf_counter() - start_time) * 1000
+                                    # 处理 reasoning summary delta 事件（首个 reasoning summary 时间）
+                                    elif chunk_type == "response.reasoning_summary_text.delta":
+                                        summary_delta = chunk_data.get("delta") or chunk_data.get("text") or ""
+                                        if isinstance(summary_delta, str) and summary_delta:
                                             if ttfr is None:
                                                 ttfr = (time.perf_counter() - start_time) * 1000
                                     # 处理完成事件中的 usage

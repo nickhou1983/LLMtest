@@ -5,10 +5,10 @@
 ## ✨ 功能特性
 
 - 🚀 **双模式测试** - 支持 Streaming 和 Non-streaming 模式
-- ⏱️ **多维度指标** - 测量总延迟、首 Token 时间（TTFT）、TPS
+- ⏱️ **多维度指标** - 测量总延迟、首 Token 时间（TTFT）、首推理时间（TTFR）、TPS
 - 📊 **批量测试** - 支持多提示词、多次运行，自动计算统计数据
 - 📁 **配置文件** - 支持 YAML 配置文件，避免重复输入参数
-- 🎯 **推理模型支持** - 支持 `reasoning_effort` 参数（适用于 o1 等模型）
+- 🎯 **推理模型支持** - 支持 `reasoning_effort` 和 `reasoning_summary` 参数（适用于 o1、GPT-5 等模型）
 - 📤 **结果导出** - 支持 JSON 格式输出和文件保存
 - 🎨 **美观输出** - 使用 Rich 库提供彩色表格和进度条
 
@@ -80,6 +80,7 @@ python main.py
 | `--output` | `-o` | 输出结果到 JSON 文件 | - |
 | `--json` | - | 仅输出 JSON 格式 | `false` |
 | `--reasoning-effort` | - | 推理强度 (`low`/`medium`/`high`) | - |
+| `--reasoning-summary` | - | 推理摘要模式 (`auto`/`detailed`/`concise`)，启用后可获取 TTFR | - |
 | `--max-tokens` | - | 最大输出 token 数 | - |
 
 ### 配置文件
@@ -108,6 +109,7 @@ timeout: 120          # 请求超时时间（秒）
 
 # 模型参数
 # reasoning_effort: "medium"  # 推理强度：low, medium, high（适用于 o1 等推理模型）
+# reasoning_summary: "auto"   # 推理摘要模式：auto, detailed, concise（启用后可获取 TTFR）
 # max_tokens: 4096            # 最大输出 token 数
 
 # 提示词配置（二选一）
@@ -241,6 +243,7 @@ python main.py \
 |------|------|
 | **延迟 (Latency)** | 从发送请求到接收完整响应的总时间（毫秒） |
 | **TTFT** | Time To First Token，首个 token 返回的时间（仅 Streaming 模式） |
+| **TTFR** | Time To First Reasoning，首个推理摘要返回的时间（仅 Streaming 模式 + 启用 `reasoning_summary`） |
 | **输出 Tokens** | 模型生成的 token 数量 |
 | **TPS** | Tokens Per Second，每秒生成的 token 数 |
 
@@ -272,7 +275,39 @@ TTFT = 首个有效内容 chunk 接收时间 - 请求开始时间
 - **意义**：反映模型"思考"时间，对于推理模型（如 o1、GPT-5.2-Codex）此值较大
 - **注意**：不计入空 chunk 或仅包含 `role` 字段的初始 chunk
 
-#### 3. 输出 Token 数 (Output Tokens / Completion Tokens)
+#### 3. 首推理摘要延迟 (TTFR - Time To First Reasoning)
+
+```text
+TTFR = 首个推理摘要 chunk 接收时间 - 请求开始时间
+```
+
+- **仅在 Streaming 模式 + 启用 `reasoning_summary` 参数时可用**
+- **测量起点**：HTTP 请求发送的瞬间
+- **测量终点**：收到第一个 `response.reasoning_summary_text.delta` 事件
+- **单位**：毫秒 (ms)
+- **意义**：反映模型开始输出推理摘要的时间，通常 TTFR < TTFT
+- **配置要求**：需要在请求中设置 `reasoning_summary: "auto"` 或 `"detailed"`
+- **支持事件类型**：
+  - `response.reasoning_summary_text.delta` - 推理摘要增量（Azure OpenAI 支持）
+  - `response.reasoning_text.delta` - 原始推理增量（部分平台支持）
+
+**配置示例：**
+
+```yaml
+streaming: true
+reasoning_effort: "high"
+reasoning_summary: "detailed"  # 启用后可获取 TTFR
+```
+
+**测试数据参考（gpt-5.2-codex）：**
+
+| 推理深度 | TTFR | TTFT | 总延迟 | 输出 Tokens | TPS |
+|---|---|---|---|---|---|
+| Low | 12,420 ms | 13,201 ms | 35,352 ms | 633 | 28.58 |
+| Medium | 7,546 ms | 8,859 ms | 27,411 ms | 669 | 36.06 |
+| High | 17,307 ms | 52,620 ms | 81,126 ms | 1,807 | 63.39 |
+
+#### 4. 输出 Token 数 (Output Tokens / Completion Tokens)
 
 ```text
 输出 Tokens = API 返回的 usage.completion_tokens || tiktoken 本地计算

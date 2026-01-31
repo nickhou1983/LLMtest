@@ -149,7 +149,7 @@ def run_single_test(
             response_content=response.content,
             timing=response.timing,
             tokens=response.tokens,
-            tps=round(tps, 2) if tps else None
+            tps=round(tps, 2) if tps is not None else None
         )
     else:
         return TestResult(
@@ -224,10 +224,10 @@ def display_results_table(results: list[TestResult], streaming: bool):
         if result.status == "success":
             row.append(f"{result.timing.total_latency_ms:.2f}" if result.timing else "-")
             if streaming:
-                row.append(f"{result.timing.ttft_ms:.2f}" if result.timing and result.timing.ttft_ms else "-")
-                row.append(f"{result.timing.ttfr_ms:.2f}" if result.timing and result.timing.ttfr_ms else "-")
+                row.append(f"{result.timing.ttft_ms:.2f}" if result.timing and result.timing.ttft_ms is not None else "-")
+                row.append(f"{result.timing.ttfr_ms:.2f}" if result.timing and result.timing.ttfr_ms is not None else "-")
             row.append(str(result.tokens.completion_tokens) if result.tokens else "-")
-            row.append(f"{result.tps:.2f}" if result.tps else "-")
+            row.append(f"{result.tps:.2f}" if result.tps is not None else "-")
         else:
             row.append("-")
             if streaming:
@@ -374,6 +374,11 @@ def results_to_dict(results: list[TestResult], summary: BatchSummary) -> dict:
     help="推理强度（适用于 o1 等推理模型）"
 )
 @click.option(
+    "--reasoning-summary",
+    type=click.Choice(["auto", "detailed", "concise"]),
+    help="推理摘要模式，启用后可获取 TTFR（auto/detailed/concise）"
+)
+@click.option(
     "--max-tokens",
     type=int,
     help="最大输出 token 数"
@@ -397,6 +402,7 @@ def main(
     output: Optional[str],
     json_output: Optional[bool],
     reasoning_effort: Optional[str],
+    reasoning_summary: Optional[str],
     max_tokens: Optional[int],
     no_cache: Optional[bool]
 ):
@@ -422,6 +428,7 @@ def main(
         "output": output,
         "json_output": json_output,
         "reasoning_effort": reasoning_effort,
+        "reasoning_summary": reasoning_summary,
         "max_tokens": max_tokens,
         "no_cache": no_cache,
     }
@@ -439,6 +446,7 @@ def main(
     output = cfg.get("output")
     json_output = cfg.get("json_output", False)
     reasoning_effort = cfg.get("reasoning_effort")
+    reasoning_summary = cfg.get("reasoning_summary")
     max_tokens = cfg.get("max_tokens")
     no_cache = cfg.get("no_cache", False)
     config_file_used = cfg.get("_config_file")
@@ -470,6 +478,8 @@ def main(
         model_params = ""
         if reasoning_effort:
             model_params += f"\n[bold]推理强度:[/bold] {reasoning_effort}"
+        if reasoning_summary:
+            model_params += f"\n[bold]推理摘要:[/bold] {reasoning_summary}"
         if max_tokens:
             model_params += f"\n[bold]最大Tokens:[/bold] {max_tokens}"
         console.print(Panel(
@@ -492,6 +502,7 @@ def main(
         model=model,
         timeout=timeout,
         reasoning_effort=reasoning_effort,
+        reasoning_summary=reasoning_summary,
         max_tokens=max_tokens,
         no_cache=no_cache
     )

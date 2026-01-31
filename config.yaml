@@ -8,11 +8,12 @@ model: "gpt-5.2-codex"
 
 # 测试配置
 streaming: true      # 是否使用 streaming 模式（可测量 TTFT）
-runs: 1               # 每个提示词的测试次数
+runs: 3               # 每个提示词的测试次数
 timeout: 3600          # 请求超时时间（秒）
 
 # 模型参数
 reasoning_effort: "high"  # 推理强度：low, medium, high（适用于 o1 等推理模型）
+reasoning_summary: "detailed"  # 推理摘要模式：auto, detailed, concise（启用后可获取 TTFR）
 # max_tokens: 4096            # 最大输出 token 数
 no_cache: true               # 禁用 API 端缓存，确保每次请求都重新计算
 
