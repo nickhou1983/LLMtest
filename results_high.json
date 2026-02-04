@@ -1,0 +1,77 @@
+{
+  "summary": {
+    "total_requests": 3,
+    "successful": 3,
+    "failed": 0,
+    "latency_stats": {
+      "count": 3,
+      "avg": 55389.61,
+      "std": 13104.31,
+      "min": 44954.33,
+      "max": 70096.8
+    },
+    "ttft_stats": {
+      "count": 3,
+      "avg": 38466.32,
+      "std": 16473.29,
+      "min": 24290.84,
+      "max": 56538.64
+    },
+    "ttfr_stats": {
+      "count": 2,
+      "avg": 12356.24,
+      "std": 935.86,
+      "min": 11694.49,
+      "max": 13017.99
+    },
+    "output_tokens_stats": {
+      "count": 3,
+      "avg": 1451,
+      "std": 379.61,
+      "min": 1130,
+      "max": 1870
+    },
+    "tps_stats": {
+      "count": 3,
+      "avg": 91.46,
+      "std": 42.45,
+      "min": 54.69,
+      "max": 137.92
+    }
+  },
+  "results": [
+    {
+      "prompt": "生成一个日历应用的代码示例，使用 Python 和 Tkinter 库。",
+      "status": "success",
+      "error_message": null,
+      "response_content": "下面是一个**使用 Python + Tkinter 实现的简单日历应用**示例代码，支持月份切换，并高亮显示当前日期：\n\n```python\nimport tkinter as tk\nimport calendar\nfrom datetime import datetime\n\nclass CalendarApp(tk.Tk):\n    def __init__(self):\n        super().__init__()\n        self.title(\"Tkinter 日历\")\n        self.resizable(False, False)\n\n        calendar.setfirstweekday(calendar.MONDAY)\n\n        # 当前年月\n        today = datetime.today()\n        self.year = today.year\n        self.month = today.month\n\n        # 头部导航栏\n        header = tk.Frame(self)\n        header.pack(pady=5)\n\n        tk.Button(header, text=\"◀\", width=3, command=self.prev_month).grid(row=0, column=0)\n        self.title_label = tk.Label(header, font=(\"Arial\", 14, \"bold\"))\n        self.title_label.grid(row=0, column=1, padx=10)\n        tk.Button(header, text=\"▶\", width=3, command=self.next_month).grid(row=0, column=2)\n\n        # 星期标题\n        days_frame = tk.Frame(self)\n        days_frame.pack()\n        for i, day in enumerate([\"Mon\", \"Tue\", \"Wed\", \"Thu\", \"Fri\", \"Sat\", \"Sun\"]):\n            tk.Label(days_frame, text=day, width=4, fg=\"blue\").grid(row=0, column=i)\n\n        # 日期标签\n        self.day_labels = []\n        for r in range(6):\n            row = []\n            for c in range(7):\n                lbl = tk.Label(days_frame, text=\"\", width=4, height=2,\n                               borderwidth=1, relief=\"solid\")\n                lbl.grid(row=r+1, column=c, padx=1, pady=1)\n                row.append(lbl)\n            self.day_labels.append(row)\n\n        self.update_calendar()\n\n    def update_calendar(self):\n        self.title_label.config(text=f\"{calendar.month_name[self.month]} {self.year}\")\n\n        month_days = calendar.monthcalendar(self.year, self.month)\n        today = datetime.today()\n\n        for r in range(6):\n            for c in range(7):\n                day = month_days[r][c] if r < len(month_days) else 0\n                lbl = self.day_labels[r][c]\n\n                if day == 0:\n                    lbl.config(text=\"\", background=self.cget(\"bg\"))\n                else:\n                    if (day == today.day and self.month == today.month and self.year == today.year):\n                        lbl.config(text=str(day), background=\"lightblue\")\n                    else:\n                        lbl.config(text=str(day), background=\"white\")\n\n    def prev_month(self):\n        self.month -= 1\n        if self.month < 1:\n            self.month = 12\n            self.year -= 1\n        self.update_calendar()\n\n    def next_month(self):\n        self.month += 1\n        if self.month > 12:\n            self.month = 1\n            self.year += 1\n        self.update_calendar()\n\nif __name__ == \"__main__\":\n    app = CalendarApp()\n    app.mainloop()\n```\n\n✅ 功能说明：\n- 显示当月日历\n- 上一月 / 下一月切换\n- 当前日期高亮显示\n\n你可以在此基础上继续扩展，比如：点击日期弹出事件、添加日程等。",
+      "latency_ms": 70096.8,
+      "ttft_ms": 56538.64,
+      "ttfr_ms": 13017.99,
+      "output_tokens": 1870,
+      "tps": 137.92
+    },
+    {
+      "prompt": "生成一个日历应用的代码示例，使用 Python 和 Tkinter 库。",
+      "status": "success",
+      "error_message": null,
+      "response_content": "下面是一个简单的 **Python + Tkinter** 日历应用示例，支持显示当前月份、上一月/下一月切换，并高亮今天日期。\n\n```python\nimport tkinter as tk\nimport calendar\nfrom datetime import datetime\n\nclass CalendarApp(tk.Tk):\n    def __init__(self):\n        super().__init__()\n        self.title(\"Tkinter 日历示例\")\n        self.resizable(False, False)\n\n        today = datetime.today()\n        self.year = today.year\n        self.month = today.month\n\n        # 顶部导航栏\n        nav = tk.Frame(self)\n        nav.pack(pady=10)\n\n        tk.Button(nav, text=\"上一月\", command=self.prev_month).pack(side=tk.LEFT, padx=5)\n        self.title_lbl = tk.Label(nav, text=\"\", font=(\"Arial\", 14, \"bold\"))\n        self.title_lbl.pack(side=tk.LEFT, padx=10)\n        tk.Button(nav, text=\"下一月\", command=self.next_month).pack(side=tk.LEFT, padx=5)\n\n        # 日历显示区域\n        self.days_frame = tk.Frame(self)\n        self.days_frame.pack(padx=10, pady=5)\n\n        self.show_calendar()\n\n    def show_calendar(self):\n        # 清空旧内容\n        for widget in self.days_frame.winfo_children():\n            widget.destroy()\n\n        # 更新标题\n        self.title_lbl.config(text=f\"{calendar.month_name[self.month]} {self.year}\")\n\n        # 星期标题\n        for i, day in enumerate(calendar.day_abbr):\n            tk.Label(self.days_frame, text=day, width=4, borderwidth=1, relief=\"solid\").grid(row=0, column=i)\n\n        # 日期网格\n        cal = calendar.monthcalendar(self.year, self.month)\n        today = datetime.today()\n\n        for r, week in enumerate(cal, start=1):\n            for c, day in enumerate(week):\n                if day == 0:\n                    tk.Label(self.days_frame, text=\"\", width=4, borderwidth=1, relief=\"solid\").grid(row=r, column=c)\n                else:\n                    bg = \"lightblue\" if (day == today.day and self.month == today.month and self.year == today.year) else \"white\"\n                    tk.Label(self.days_frame, text=str(day), width=4, borderwidth=1, relief=\"solid\", bg=bg)\\\n                        .grid(row=r, column=c)\n\n    def prev_month(self):\n        self.month -= 1\n        if self.month == 0:\n            self.month = 12\n            self.year -= 1\n        self.show_calendar()\n\n    def next_month(self):\n        self.month += 1\n        if self.month == 13:\n            self.month = 1\n            self.year += 1\n        self.show_calendar()\n\n\nif __name__ == \"__main__\":\n    app = CalendarApp()\n    app.mainloop()\n```\n\n✅ 运行后即可看到一个带有月份切换功能的日历界面。  \n如果你需要添加点击事件或显示节假日，也可以在此基础上扩展。",
+      "latency_ms": 51117.71,
+      "ttft_ms": 34569.48,
+      "ttfr_ms": 11694.49,
+      "output_tokens": 1353,
+      "tps": 81.76
+    },
+    {
+      "prompt": "生成一个日历应用的代码示例，使用 Python 和 Tkinter 库。",
+      "status": "success",
+      "error_message": null,
+      "response_content": "下面是一个使用 **Python + Tkinter** 编写的简易日历应用示例，支持月份切换并高亮显示今天：\n\n```python\nimport tkinter as tk\nimport calendar\nfrom datetime import datetime\n\nclass CalendarApp:\n    def __init__(self, root):\n        self.root = root\n        self.root.title(\"日历应用\")\n\n        # 初始化日期\n        self.today = datetime.today()\n        self.year = self.today.year\n        self.month = self.today.month\n\n        # 顶部导航栏\n        nav = tk.Frame(root)\n        nav.pack(pady=10)\n\n        tk.Button(nav, text=\"<< 上月\", command=self.prev_month).pack(side=tk.LEFT, padx=5)\n        self.title_label = tk.Label(nav, text=\"\", font=(\"Arial\", 16, \"bold\"))\n        self.title_label.pack(side=tk.LEFT, padx=10)\n        tk.Button(nav, text=\"下月 >>\", command=self.next_month).pack(side=tk.LEFT, padx=5)\n\n        # 日历显示区域\n        self.calendar_frame = tk.Frame(root)\n        self.calendar_frame.pack(padx=10, pady=10)\n\n        self.show_month()\n\n    def show_month(self):\n        # 清空旧日历\n        for widget in self.calendar_frame.winfo_children():\n            widget.destroy()\n\n        # 更新标题\n        self.title_label.config(text=f\"{self.year}年 {self.month}月\")\n\n        # 星期标题\n        week_names = ['一', '二', '三', '四', '五', '六', '日']\n        for i, name in enumerate(week_names):\n            tk.Label(self.calendar_frame, text=name, font=(\"Arial\", 10, \"bold\"),\n                     width=4).grid(row=0, column=i)\n\n        # 月份日期\n        weeks = calendar.monthcalendar(self.year, self.month)\n        for r, week in enumerate(weeks, start=1):\n            for c, day in enumerate(week):\n                if day == 0:\n                    tk.Label(self.calendar_frame, text=\"\", width=4, height=2).grid(row=r, column=c)\n                else:\n                    is_today = (day == self.today.day and\n                                self.month == self.today.month and\n                                self.year == self.today.year)\n                    color = \"red\" if is_today else \"black\"\n                    tk.Label(self.calendar_frame, text=str(day), fg=color,\n                             width=4, height=2).grid(row=r, column=c)\n\n    def prev_month(self):\n        if self.month == 1:\n            self.month = 12\n            self.year -= 1\n        else:\n            self.month -= 1\n        self.show_month()\n\n    def next_month(self):\n        if self.month == 12:\n            self.month = 1\n            self.year += 1\n        else:\n            self.month += 1\n        self.show_month()\n\nif __name__ == \"__main__\":\n    root = tk.Tk()\n    app = CalendarApp(root)\n    root.mainloop()\n```\n\n运行后将弹出一个可切换月份的日历窗口，今天的日期会以红色显示。你可以在此基础上继续扩展，例如添加事件提醒、日期点击等功能。",
+      "latency_ms": 44954.33,
+      "ttft_ms": 24290.84,
+      "ttfr_ms": null,
+      "output_tokens": 1130,
+      "tps": 54.69
+    }
+  ]
+}
