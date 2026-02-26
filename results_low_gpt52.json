@@ -5,38 +5,38 @@
     "failed": 0,
     "latency_stats": {
       "count": 3,
-      "avg": 17628.65,
-      "std": 1075.64,
-      "min": 16518.99,
-      "max": 18666.68
+      "avg": 19779.95,
+      "std": 1834.32,
+      "min": 18021.18,
+      "max": 21681.48
     },
     "ttft_stats": {
       "count": 3,
-      "avg": 6168.17,
-      "std": 877.92,
-      "min": 5431.26,
-      "max": 7139.51
+      "avg": 5517.94,
+      "std": 833.25,
+      "min": 4809.18,
+      "max": 6435.84
     },
     "ttfr_stats": {
-      "count": 3,
-      "avg": 5185.13,
-      "std": 933.17,
-      "min": 4259.58,
-      "max": 6125.73
+      "count": 2,
+      "avg": 5010.66,
+      "std": 889.5,
+      "min": 4381.69,
+      "max": 5639.64
     },
     "output_tokens_stats": {
       "count": 3,
-      "avg": 567,
-      "std": 82.15,
-      "min": 475,
-      "max": 633
+      "avg": 562.33,
+      "std": 105.63,
+      "min": 464,
+      "max": 674
     },
     "tps_stats": {
       "count": 3,
-      "avg": 49.37,
-      "std": 5.1,
-      "min": 44.87,
-      "max": 54.91
+      "avg": 39.56,
+      "std": 7.18,
+      "min": 31.29,
+      "max": 44.21
     }
   },
   "results": [
@@ -44,34 +44,34 @@
       "prompt": "生成一个日历应用的代码示例，使用 Python 和 Tkinter 库。",
       "status": "success",
       "error_message": null,
-      "response_content": "下面是一个使用 **Python + Tkinter** 实现的简单日历应用示例（可显示当月，并支持上一月/下一月切换）：\n\n```python\nimport tkinter as tk\nimport calendar\nfrom datetime import datetime\n\nclass CalendarApp:\n    def __init__(self, root):\n        self.root = root\n        self.root.title(\"日历应用\")\n        self.year = datetime.now().year\n        self.month = datetime.now().month\n\n        # 顶部导航\n        nav_frame = tk.Frame(root)\n        nav_frame.pack(pady=10)\n\n        tk.Button(nav_frame, text=\"上一月\", command=self.prev_month).pack(side=tk.LEFT, padx=5)\n        self.label = tk.Label(nav_frame, text=\"\", font=(\"Arial\", 14))\n        self.label.pack(side=tk.LEFT, padx=10)\n        tk.Button(nav_frame, text=\"下一月\", command=self.next_month).pack(side=tk.LEFT, padx=5)\n\n        # 日历显示区域\n        self.calendar_frame = tk.Frame(root)\n        self.calendar_frame.pack()\n\n        self.draw_calendar()\n\n    def draw_calendar(self):\n        # 清空旧日历\n        for widget in self.calendar_frame.winfo_children():\n            widget.destroy()\n\n        # 更新标题\n        self.label.config(text=f\"{self.year}年 {self.month}月\")\n\n        # 星期标题\n        week_days = [\"一\", \"二\", \"三\", \"四\", \"五\", \"六\", \"日\"]\n        for i, day in enumerate(week_days):\n            tk.Label(self.calendar_frame, text=day, font=(\"Arial\", 10, \"bold\"), width=4)\\\n                .grid(row=0, column=i)\n\n        # 生成日历\n        cal = calendar.monthcalendar(self.year, self.month)\n        for r, week in enumerate(cal, start=1):\n            for c, day in enumerate(week):\n                text = str(day) if day != 0 else \"\"\n                tk.Label(self.calendar_frame, text=text, width=4, height=2)\\\n                    .grid(row=r, column=c)\n\n    def prev_month(self):\n        self.month -= 1\n        if self.month < 1:\n            self.month = 12\n            self.year -= 1\n        self.draw_calendar()\n\n    def next_month(self):\n        self.month += 1\n        if self.month > 12:\n            self.month = 1\n            self.year += 1\n        self.draw_calendar()\n\nif __name__ == \"__main__\":\n    root = tk.Tk()\n    app = CalendarApp(root)\n    root.mainloop()\n```\n\n✅ 运行后会弹出一个简单的日历窗口，并可切换月份。  \n如需扩展（如添加事件/提醒功能），可在此基础上继续完善。",
-      "latency_ms": 18666.68,
-      "ttft_ms": 7139.51,
-      "ttfr_ms": 6125.73,
-      "output_tokens": 633,
-      "tps": 54.91
+      "response_content": "下面是一个简单的日历应用示例，使用 **Python + Tkinter** 实现。它可以显示当前月份的日历，并支持切换月份：\n\n```python\nimport tkinter as tk\nimport calendar\nfrom datetime import datetime\n\nclass CalendarApp:\n    def __init__(self, root):\n        self.root = root\n        self.root.title(\"日历应用\")\n\n        self.year = datetime.now().year\n        self.month = datetime.now().month\n\n        self.header = tk.Label(root, text=\"\", font=(\"Arial\", 16))\n        self.header.pack(pady=10)\n\n        self.text = tk.Text(root, width=20, height=8, font=(\"Courier\", 12))\n        self.text.pack()\n\n        btn_frame = tk.Frame(root)\n        btn_frame.pack(pady=5)\n\n        tk.Button(btn_frame, text=\"上个月\", command=self.prev_month).pack(side=tk.LEFT, padx=5)\n        tk.Button(btn_frame, text=\"下个月\", command=self.next_month).pack(side=tk.LEFT, padx=5)\n\n        self.show_calendar()\n\n    def show_calendar(self):\n        self.header.config(text=f\"{self.year}年 {self.month}月\")\n        self.text.delete(\"1.0\", tk.END)\n\n        cal = calendar.month(self.year, self.month)\n        self.text.insert(tk.END, cal)\n\n    def prev_month(self):\n        if self.month == 1:\n            self.month = 12\n            self.year -= 1\n        else:\n            self.month -= 1\n        self.show_calendar()\n\n    def next_month(self):\n        if self.month == 12:\n            self.month = 1\n            self.year += 1\n        else:\n            self.month += 1\n        self.show_calendar()\n\n\nif __name__ == \"__main__\":\n    root = tk.Tk()\n    app = CalendarApp(root)\n    root.mainloop()\n```\n\n运行后会显示一个简单的日历窗口，可以切换上个月和下个月。  \n如果需要更完整的功能（如日期点击、事件提醒等），也可以基于此继续扩展。",
+      "latency_ms": 19637.19,
+      "ttft_ms": 4809.18,
+      "ttfr_ms": null,
+      "output_tokens": 464,
+      "tps": 31.29
     },
     {
       "prompt": "生成一个日历应用的代码示例，使用 Python 和 Tkinter 库。",
       "status": "success",
       "error_message": null,
-      "response_content": "下面是一个使用 **Python + Tkinter** 编库实现的简易日历应用示例，支持月份切换并显示当月日历：\n\n```python\nimport tkinter as tk\nfrom tkinter import ttk\nimport calendar\nfrom datetime import datetime\n\nclass CalendarApp(tk.Tk):\n    def __init__(self):\n        super().__init__()\n        self.title(\"简易日历\")\n        self.geometry(\"320x260\")\n        self.resizable(False, False)\n\n        # 当前年月\n        now = datetime.now()\n        self.year = now.year\n        self.month = now.month\n\n        # 顶部控件\n        top = ttk.Frame(self)\n        top.pack(pady=10)\n\n        self.prev_btn = ttk.Button(top, text=\"<< 上月\", command=self.prev_month)\n        self.prev_btn.grid(row=0, column=0, padx=5)\n\n        self.title_label = ttk.Label(top, text=\"\", font=(\"Arial\", 12, \"bold\"))\n        self.title_label.grid(row=0, column=1, padx=5)\n\n        self.next_btn = ttk.Button(top, text=\"下月 >>\", command=self.next_month)\n        self.next_btn.grid(row=0, column=2, padx=5)\n\n        # 日历显示区域\n        self.cal_text = tk.Text(self, width=28, height=8, font=(\"Consolas\", 11))\n        self.cal_text.pack(pady=5)\n        self.cal_text.config(state=tk.DISABLED)\n\n        self.update_calendar()\n\n    def update_calendar(self):\n        self.title_label.config(text=f\"{self.year} 年 {self.month} 月\")\n\n        cal = calendar.TextCalendar(calendar.MONDAY)\n        cal_str = cal.formatmonth(self.year, self.month)\n\n        self.cal_text.config(state=tk.NORMAL)\n        self.cal_text.delete(\"1.0\", tk.END)\n        self.cal_text.insert(tk.END, cal_str)\n        self.cal_text.config(state=tk.DISABLED)\n\n    def prev_month(self):\n        if self.month == 1:\n            self.month = 12\n            self.year -= 1\n        else:\n            self.month -= 1\n        self.update_calendar()\n\n    def next_month(self):\n        if self.month == 12:\n            self.month = 1\n            self.year += 1\n        else:\n            self.month += 1\n        self.update_calendar()\n\nif __name__ == \"__main__\":\n    app = CalendarApp()\n    app.mainloop()\n```\n\n运行后即可看到一个简洁的日历窗口，支持切换月份。需要更复杂功能（如点击日期、事件提醒等）可以继续扩展。",
-      "latency_ms": 17700.28,
-      "ttft_ms": 5431.26,
-      "ttfr_ms": 4259.58,
-      "output_tokens": 593,
-      "tps": 48.33
+      "response_content": "下面是一个使用 **Python + Tkinter** 实现的简易日历应用示例，包含月份切换功能。无需额外第三方库，仅使用标准库 `calendar`。\n\n```python\nimport tkinter as tk\nfrom tkinter import ttk\nimport calendar\nfrom datetime import datetime\n\nclass CalendarApp(tk.Tk):\n    def __init__(self):\n        super().__init__()\n        self.title(\"简单日历\")\n        self.geometry(\"300x300\")\n        self.resizable(False, False)\n\n        self.current_year = datetime.now().year\n        self.current_month = datetime.now().month\n\n        # 顶部操作栏\n        control_frame = ttk.Frame(self)\n        control_frame.pack(pady=5)\n\n        ttk.Button(control_frame, text=\"<< 上月\", command=self.prev_month).grid(row=0, column=0, padx=5)\n        ttk.Button(control_frame, text=\"下月 >>\", command=self.next_month).grid(row=0, column=2, padx=5)\n\n        self.label = ttk.Label(control_frame, text=\"\")\n        self.label.grid(row=0, column=1, padx=5)\n\n        # 日历显示区域\n        self.calendar_frame = ttk.Frame(self)\n        self.calendar_frame.pack(pady=5)\n\n        self.draw_calendar()\n\n    def draw_calendar(self):\n        # 清空旧内容\n        for widget in self.calendar_frame.winfo_children():\n            widget.destroy()\n\n        self.label.config(text=f\"{self.current_year}年 {self.current_month}月\")\n\n        # 星期标题\n        days = [\"日\", \"一\", \"二\", \"三\", \"四\", \"五\", \"六\"]\n        for i, day in enumerate(days):\n            ttk.Label(self.calendar_frame, text=day, width=4, anchor=\"center\").grid(row=0, column=i)\n\n        # 日历内容\n        cal = calendar.monthcalendar(self.current_year, self.current_month)\n        for r, week in enumerate(cal, start=1):\n            for c, day in enumerate(week):\n                text = str(day) if day != 0 else \"\"\n                ttk.Label(self.calendar_frame, text=text, width=4, anchor=\"center\").grid(row=r, column=c)\n\n    def prev_month(self):\n        self.current_month -= 1\n        if self.current_month == 0:\n            self.current_month = 12\n            self.current_year -= 1\n        self.draw_calendar()\n\n    def next_month(self):\n        self.current_month += 1\n        if self.current_month == 13:\n            self.current_month = 1\n            self.current_year += 1\n        self.draw_calendar()\n\nif __name__ == \"__main__\":\n    app = CalendarApp()\n    app.mainloop()\n```\n\n✅ 运行后会显示当前月，并支持切换月份。  \n如需扩展功能（点击日期、添加事件等），可以继续在此基础上添加按钮或绑定事件。",
+      "latency_ms": 21681.48,
+      "ttft_ms": 6435.84,
+      "ttfr_ms": 5639.64,
+      "output_tokens": 674,
+      "tps": 44.21
     },
     {
       "prompt": "生成一个日历应用的代码示例，使用 Python 和 Tkinter 库。",
       "status": "success",
       "error_message": null,
-      "response_content": "下面是一个简单的日历应用示例，使用 **Python + Tkinter** 和 `calendar` 模块，展示指定年月的月历，并支持切换月份。\n\n```python\nimport tkinter as tk\nimport calendar\nfrom datetime import datetime\n\nclass CalendarApp:\n    def __init__(self, root):\n        self.root = root\n        self.root.title(\"日历应用示例\")\n\n        self.year = datetime.now().year\n        self.month = datetime.now().month\n\n        # 顶部控制栏\n        top = tk.Frame(root)\n        top.pack(pady=5)\n\n        tk.Button(top, text=\"上一月\", command=self.prev_month).pack(side=tk.LEFT, padx=5)\n        tk.Button(top, text=\"下一月\", command=self.next_month).pack(side=tk.LEFT, padx=5)\n\n        self.label = tk.Label(root, font=(\"Arial\", 14))\n        self.label.pack()\n\n        self.text = tk.Text(root, width=20, height=8, font=(\"Courier\", 12), bd=0)\n        self.text.pack()\n\n        self.show_calendar()\n\n    def show_calendar(self):\n        self.label.config(text=f\"{self.year}年 {self.month}月\")\n        self.text.delete(1.0, tk.END)\n        cal = calendar.month(self.year, self.month)\n        self.text.insert(tk.END, cal)\n\n    def prev_month(self):\n        self.month -= 1\n        if self.month < 1:\n            self.month = 12\n            self.year -= 1\n        self.show_calendar()\n\n    def next_month(self):\n        self.month += 1\n        if self.month > 12:\n            self.month = 1\n            self.year += 1\n        self.show_calendar()\n\nif __name__ == \"__main__\":\n    root = tk.Tk()\n    CalendarApp(root)\n    root.mainloop()\n```\n\n✅ 功能：\n- 显示当前年月日历  \n- 支持切换上一月 / 下一月  \n\n可进一步扩展：添加日期点击事件、提醒事项、GUI美化等。",
-      "latency_ms": 16518.99,
-      "ttft_ms": 5933.75,
-      "ttfr_ms": 5170.07,
-      "output_tokens": 475,
-      "tps": 44.87
+      "response_content": "下面给出一个简单的日历应用示例，使用 **Python + Tkinter** 实现，能显示指定年月的日历。无需第三方库，直接运行即可。\n\n```python\nimport tkinter as tk\nfrom tkinter import ttk\nimport calendar\nfrom datetime import datetime\n\nclass CalendarApp(tk.Tk):\n    def __init__(self):\n        super().__init__()\n        self.title(\"简易日历\")\n        self.geometry(\"350x300\")\n\n        # 顶部选择区\n        top_frame = ttk.Frame(self)\n        top_frame.pack(pady=10)\n\n        # 年份选择\n        self.year_var = tk.IntVar(value=datetime.now().year)\n        ttk.Label(top_frame, text=\"年:\").grid(row=0, column=0, padx=5)\n        self.year_spin = ttk.Spinbox(top_frame, from_=1900, to=2100,\n                                     textvariable=self.year_var, width=6, command=self.update_calendar)\n        self.year_spin.grid(row=0, column=1, padx=5)\n\n        # 月份选择\n        self.month_var = tk.IntVar(value=datetime.now().month)\n        ttk.Label(top_frame, text=\"月:\").grid(row=0, column=2, padx=5)\n        self.month_spin = ttk.Spinbox(top_frame, from_=1, to=12,\n                                      textvariable=self.month_var, width=4, command=self.update_calendar)\n        self.month_spin.grid(row=0, column=3, padx=5)\n\n        # 显示日历\n        self.text = tk.Text(self, width=28, height=10, font=(\"Courier New\", 12))\n        self.text.pack(pady=10)\n\n        self.update_calendar()\n\n    def update_calendar(self):\n        year = self.year_var.get()\n        month = self.month_var.get()\n        cal = calendar.month(year, month)\n\n        self.text.delete(\"1.0\", tk.END)\n        self.text.insert(tk.END, cal)\n\nif __name__ == \"__main__\":\n    app = CalendarApp()\n    app.mainloop()\n```\n\n### 运行效果\n- 选择年份和月份后，会在下方文本框中显示对应的日历。\n- 使用 Python 内置的 `calendar` 模块生成文本日历。\n\n你可以在此基础上扩展更多功能，例如点击日期、添加事件等。",
+      "latency_ms": 18021.18,
+      "ttft_ms": 5308.79,
+      "ttfr_ms": 4381.69,
+      "output_tokens": 549,
+      "tps": 43.19
     }
   ]
 }
