@@ -1,21 +1,27 @@
 """
-指标计算和统计模块
+指标数据结构与统计计算模块
+
+独立实现，不依赖仓库根目录的 metrics.py。
+提供 TTFT/TTFR 测试所需的全部数据结构和统计函数。
 """
 
 import statistics
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
-import tiktoken
+try:
+    import tiktoken
+except ImportError:
+    tiktoken = None
 
 
 @dataclass
 class TimingMetrics:
     """时间指标"""
-    total_latency_ms: float  # 总延迟（毫秒）
-    ttft_ms: Optional[float] = None  # 首 token 时间（仅 streaming 模式）
-    ttfr_ms: Optional[float] = None  # 首 reasoning token 时间（仅 streaming 模式）
-    ttfr_event_type: Optional[str] = None  # 触发 TTFR 的首个 reasoning 事件类型
+    total_latency_ms: float
+    ttft_ms: Optional[float] = None
+    ttfr_ms: Optional[float] = None
+    ttfr_event_type: Optional[str] = None
 
 
 @dataclass
@@ -35,7 +41,7 @@ class TestResult:
     response_content: Optional[str] = None
     timing: Optional[TimingMetrics] = None
     tokens: Optional[TokenMetrics] = None
-    tps: Optional[float] = None  # Tokens Per Second
+    tps: Optional[float] = None
 
 
 @dataclass
@@ -62,99 +68,63 @@ class BatchSummary:
 
 
 def count_tokens_tiktoken(text: str, model: str = "gpt-4") -> int:
-    """
-    使用 tiktoken 计算文本的 token 数量
-    
-    Args:
-        text: 要计算的文本
-        model: 模型名称，用于选择正确的编码器
-        
-    Returns:
-        token 数量
-    """
+    """使用 tiktoken 计算文本的 token 数量，降级为字符估计。"""
+    if tiktoken is None:
+        return len(text) // 3
+
     try:
-        # 尝试获取模型对应的编码器
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
-            # 如果模型不存在，使用 cl100k_base（GPT-4/3.5 使用的编码）
             encoding = tiktoken.get_encoding("cl100k_base")
-        
         return len(encoding.encode(text))
     except Exception:
-        # 降级：粗略估计（英文约 4 字符/token，中文约 1.5 字符/token）
         return len(text) // 3
 
 
-def calculate_tps(tokens: int, total_latency_ms: float, ttft_ms: Optional[float] = None) -> float:
-    """
-    计算每秒生成的 token 数量
-    
-    Args:
-        tokens: 生成的 token 数量
-        total_latency_ms: 总延迟时间（毫秒）
-        ttft_ms: 首 token 时间（毫秒），用于估算纯生成阶段吞吐
-        
-    Returns:
-        每秒 token 数
-    """
+def calculate_tps(
+    tokens: int,
+    total_latency_ms: float,
+    ttft_ms: Optional[float] = None,
+) -> float:
+    """计算每秒生成的 token 数量（排除 TTFT 时间）。"""
     if total_latency_ms <= 0:
         return 0.0
-    effective_latency_ms = total_latency_ms
+    effective_ms = total_latency_ms
     if ttft_ms is not None and 0 < ttft_ms < total_latency_ms:
-        effective_latency_ms = total_latency_ms - ttft_ms
-    if effective_latency_ms <= 0:
+        effective_ms = total_latency_ms - ttft_ms
+    if effective_ms <= 0:
         return 0.0
-    return tokens / (effective_latency_ms / 1000.0)
+    return tokens / (effective_ms / 1000.0)
 
 
 def aggregate_values(values: list[float]) -> AggregatedStats:
-    """
-    计算一组数值的统计指标
-    
-    Args:
-        values: 数值列表
-        
-    Returns:
-        聚合统计结果
-    """
+    """计算一组数值的统计指标。"""
     if not values:
         return AggregatedStats()
-    
     count = len(values)
     avg = statistics.mean(values)
     std = statistics.stdev(values) if count > 1 else 0.0
-    min_val = min(values)
-    max_val = max(values)
-    
     return AggregatedStats(
         count=count,
         avg=round(avg, 2),
         std=round(std, 2),
-        min_val=round(min_val, 2),
-        max_val=round(max_val, 2)
+        min_val=round(min(values), 2),
+        max_val=round(max(values), 2),
     )
 
 
 def summarize_results(results: list[TestResult]) -> BatchSummary:
-    """
-    汇总批量测试结果
-    
-    Args:
-        results: 测试结果列表
-        
-    Returns:
-        批量测试汇总
-    """
-    successful_results = [r for r in results if r.status == "success"]
-    
-    latencies = []
-    ttfts = []
-    ttfrs = []
-    output_tokens = []
-    tps_values = []
-    
-    for r in successful_results:
+    """汇总批量测试结果。"""
+    successful = [r for r in results if r.status == "success"]
+
+    latencies: list[float] = []
+    ttfts: list[float] = []
+    ttfrs: list[float] = []
+    output_tokens: list[float] = []
+    tps_values: list[float] = []
+
+    for r in successful:
         if r.timing:
             latencies.append(r.timing.total_latency_ms)
             if r.timing.ttft_ms is not None:
@@ -162,17 +132,17 @@ def summarize_results(results: list[TestResult]) -> BatchSummary:
             if r.timing.ttfr_ms is not None:
                 ttfrs.append(r.timing.ttfr_ms)
         if r.tokens:
-            output_tokens.append(r.tokens.completion_tokens)
+            output_tokens.append(float(r.tokens.completion_tokens))
         if r.tps is not None:
             tps_values.append(r.tps)
-    
+
     return BatchSummary(
         total_requests=len(results),
-        successful=len(successful_results),
-        failed=len(results) - len(successful_results),
+        successful=len(successful),
+        failed=len(results) - len(successful),
         latency_stats=aggregate_values(latencies) if latencies else None,
         ttft_stats=aggregate_values(ttfts) if ttfts else None,
         ttfr_stats=aggregate_values(ttfrs) if ttfrs else None,
         output_tokens_stats=aggregate_values(output_tokens) if output_tokens else None,
-        tps_stats=aggregate_values(tps_values) if tps_values else None
+        tps_stats=aggregate_values(tps_values) if tps_values else None,
     )

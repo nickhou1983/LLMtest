@@ -1,9 +1,0 @@
-endpoint: https://codex-cli-azure-resource.cognitiveservices.azure.com/openai/responses?api-version=2025-04-01-preview
-model: gpt-5.2-codex
-streaming: true
-runs: 3
-timeout: 3600
-reasoning_effort: xhigh
-reasoning_summary: detailed
-no_cache: true
-prompt: 生成一个日历应用的代码示例，使用 Python 和 Tkinter 库。

@@ -255,6 +255,7 @@ class LLMClient:
         start_time = time.perf_counter()
         ttft: Optional[float] = None
         ttfr: Optional[float] = None
+        ttfr_event_type: Optional[str] = None
         content_chunks: list[str] = []
         completion_tokens = 0
         
@@ -325,12 +326,14 @@ class LLMClient:
                                         if isinstance(reasoning_delta, str) and reasoning_delta:
                                             if ttfr is None:
                                                 ttfr = (time.perf_counter() - start_time) * 1000
+                                                ttfr_event_type = chunk_type
                                     # 处理 reasoning summary delta 事件（首个 reasoning summary 时间）
                                     elif chunk_type == "response.reasoning_summary_text.delta":
                                         summary_delta = chunk_data.get("delta") or chunk_data.get("text") or ""
                                         if isinstance(summary_delta, str) and summary_delta:
                                             if ttfr is None:
                                                 ttfr = (time.perf_counter() - start_time) * 1000
+                                                ttfr_event_type = chunk_type
                                     # 处理完成事件中的 usage
                                     elif chunk_type == "response.completed":
                                         resp = chunk_data.get("response", {})
@@ -371,7 +374,8 @@ class LLMClient:
                 timing=TimingMetrics(
                     total_latency_ms=round(total_latency_ms, 2),
                     ttft_ms=round(ttft, 2) if ttft else None,
-                    ttfr_ms=round(ttfr, 2) if ttfr else None
+                    ttfr_ms=round(ttfr, 2) if ttfr else None,
+                    ttfr_event_type=ttfr_event_type
                 ),
                 tokens=TokenMetrics(
                     completion_tokens=completion_tokens,

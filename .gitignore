@@ -1,3 +1,6 @@
+# 环境变量文件（包含密钥）
+.env
+
 # 配置文件（包含敏感信息）
 config.yaml
 config.yml
@@ -7,6 +10,8 @@ Slides/
 
 # 测试结果文件
 result_*.json
+result/
+reports/
 
 # Python
 __pycache__/

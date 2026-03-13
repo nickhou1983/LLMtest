@@ -25,11 +25,15 @@ LLM 响应时间测试工具
 import json
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import click
 import yaml
+from dotenv import load_dotenv
+
+load_dotenv()
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
@@ -208,6 +212,7 @@ def display_results_table(results: list[TestResult], streaming: bool):
     if streaming:
         table.add_column("TTFT(ms)", style="magenta", justify="right", width=12)
         table.add_column("TTFR(ms)", style="magenta", justify="right", width=12)
+        table.add_column("TTFR来源", style="magenta", width=28, overflow="fold")
     table.add_column("输出Tokens", style="green", justify="right", width=12)
     table.add_column("TPS", style="blue", justify="right", width=10)
     
@@ -226,11 +231,13 @@ def display_results_table(results: list[TestResult], streaming: bool):
             if streaming:
                 row.append(f"{result.timing.ttft_ms:.2f}" if result.timing and result.timing.ttft_ms is not None else "-")
                 row.append(f"{result.timing.ttfr_ms:.2f}" if result.timing and result.timing.ttfr_ms is not None else "-")
+                row.append(result.timing.ttfr_event_type if result.timing and result.timing.ttfr_event_type else "-")
             row.append(str(result.tokens.completion_tokens) if result.tokens else "-")
             row.append(f"{result.tps:.2f}" if result.tps is not None else "-")
         else:
             row.append("-")
             if streaming:
+                row.append("-")
                 row.append("-")
                 row.append("-")
             row.append("-")
@@ -304,6 +311,7 @@ def results_to_dict(results: list[TestResult], summary: BatchSummary) -> dict:
                 "latency_ms": r.timing.total_latency_ms if r.timing else None,
                 "ttft_ms": r.timing.ttft_ms if r.timing else None,
                 "ttfr_ms": r.timing.ttfr_ms if r.timing else None,
+                "ttfr_event_type": r.timing.ttfr_event_type if r.timing else None,
                 "output_tokens": r.tokens.completion_tokens if r.tokens else None,
                 "tps": r.tps
             }
@@ -526,14 +534,28 @@ def main(
         console.print()
         display_summary(summary, streaming)
     
-    # 保存到文件
+    # 自动保存到 result 文件夹
+    result_dir = Path("result")
+    result_dir.mkdir(exist_ok=True)
+    
     if output:
         output_path = Path(output)
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(result_dict, f, ensure_ascii=False, indent=2)
-        
-        if not json_output:
-            console.print(f"\n✅ 结果已保存到: [cyan]{output}[/cyan]")
+        # 如果 output 不含目录，放到 result 文件夹下
+        if not output_path.parent.name:
+            output_path = result_dir / output_path
+    else:
+        # 根据 model + reasoning_effort + 时间戳自动生成文件名
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        effort_tag = f"_{reasoning_effort}" if reasoning_effort else ""
+        safe_model = model.replace("/", "_").replace(" ", "_")
+        output_path = result_dir / f"{safe_model}{effort_tag}_{ts}.json"
+    
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(result_dict, f, ensure_ascii=False, indent=2)
+    
+    if not json_output:
+        console.print(f"\n✅ 结果已保存到: [cyan]{output_path}[/cyan]")
     
     # 如果有失败的测试，返回非零退出码
     if summary.failed > 0:
