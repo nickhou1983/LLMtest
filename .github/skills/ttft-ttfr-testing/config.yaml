@@ -1,0 +1,29 @@
+# TTFT/TTFR 基准测试配置文件
+# 此文件为 Skill 专用配置，与仓库根目录的 config.yaml 独立
+
+# API 配置
+endpoint: "https://codex-cli-azure-resource.cognitiveservices.azure.com/openai/responses?api-version=2025-04-01-preview"
+# api_key: ""  # 通过 LLM_API_KEY 环境变量设置，或取消注释此行填入密钥
+model: "gpt-5.4"
+
+# 测试配置
+streaming: true       # 必须为 true 才能测量 TTFT
+runs: 3               # 每个提示词的测试次数
+timeout: 3600         # 请求超时时间（秒）
+
+# 模型参数
+reasoning_effort: "low"       # 推理强度：low, medium, high（适用于 o1 等推理模型）
+reasoning_summary: "concise"  # 推理摘要模式：auto, detailed, concise（启用后可获取 TTFR）
+# max_tokens: 4096            # 最大输出 token 数
+no_cache: true                # 禁用 API 端缓存，确保每次请求都重新计算
+
+# 提示词配置（二选一）
+# 方式1：直接指定单个提示词
+prompt: "create a snake game"
+
+# 方式2：从文件读取（每行一个提示词）
+# prompt_file: "prompts.txt"
+
+# 输出配置
+# output: "results.json"  # 保存结果到文件
+# json_output: false      # 是否仅输出 JSON 格式

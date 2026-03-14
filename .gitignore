@@ -2,8 +2,8 @@
 .env
 
 # 配置文件（包含敏感信息）
-config.yaml
-config.yml
+# config.yaml
+# config.yml
 
 # Slides 生成的中间文件
 Slides/
